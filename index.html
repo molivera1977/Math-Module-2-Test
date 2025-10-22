@@ -56,7 +56,15 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, doc, addDoc, updateDoc, serverTimestamp, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    const firebaseConfig = {apiKey:"AIzaSyDVt6A-01-nI1nGp5Dslv9gkb6LpQp6wgI",authDomain:"math-module-2-test.firebaseapp.com",projectId:"math-module-2-test",storageBucket:"math-module-2-test.firebasestorage.app",messagingSenderId:"829053501307",appId:"1:829053501307:web:cbad37685920e3a9de07de",measurementId:"G-8JKB2KT435"};
+    const firebaseConfig = {
+  apiKey: "AIzaSyDVt6A-01-nI1nGp5Dslv9gkb6LpQp6wgI",
+  authDomain: "math-module-2-test.firebaseapp.com",
+  projectId: "math-module-2-test",
+  storageBucket: "math-module-2-test.firebasestorage.app",
+  messagingSenderId: "829053501307",
+  appId: "1:829053501307:web:cbad37685920e3a9de07de",
+  measurementId: "G-8JKB2KT435"
+};
     const app=initializeApp(firebaseConfig);const db=getFirestore(app);
     const TEACHER_PASSWORD="Chumley19771986!";
     const tests={A:[{q:"What is 46,359 + 1,273?",options:["47,522","47,632","58,089","59,089"],answer:"47,632"}],B:[{q:"What is 23,187 + 1,596?",options:["39,147","38,047","24,783","24,673"],answer:"24,783"}]};
