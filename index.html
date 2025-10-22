@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Math Module 2 – Online Test</title>
+  <style>
+    body {font-family: "Comic Sans MS", "Comic Neue", Arial, sans-serif; background: #f0f8ff; margin: 0; padding: 0; overflow-x: hidden;}
+    header {background: linear-gradient(90deg, #0074d9, #39c0ed); color: white; padding: 1.2rem; text-align: center; font-size: 1.6rem; font-weight: bold; letter-spacing: 1px;}
+    .container {max-width: 900px; margin: 2rem auto; background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);}
+    .hidden {display: none;} button {background: #0074d9; color: white; border: none; padding: 10px 15px; margin: 8px; border-radius: 8px; cursor: pointer; font-size: 1rem;}
+    .label {font-weight: bold; display: block; margin-bottom: .3rem;}
+    input {padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; width: 100%;}
+    .center {text-align: center;} .progress-bar-container {background:#e0e0e0;border-radius:10px;overflow:hidden;height:18px;margin-bottom:1rem;}
+    .progress-bar {background:linear-gradient(90deg,#39c0ed,#28a745);height:100%;width:0%;transition:width .4s ease;}
+    table{width:100%;border-collapse:collapse;margin-top:1rem;font-size:.95rem;}th,td{border:1px solid #ddd;padding:8px;}th{background:#f7f7f7;}
+    .badge{display:inline-block;background:#eee;border-radius:999px;padding:.2rem .6rem;font-size:.8rem;margin-left:.5rem;}
+  </style>
+</head>
+<body>
+  <header>🧪 Math Module 2 – Online Test</header>
+  <canvas id="confetti-canvas"></canvas>
+  <div class="container" id="start-screen">
+    <h2>Student Info</h2>
+    <label class="label" for="student-name">Student Name</label>
+    <input id="student-name" placeholder="First Last" />
+    <div class="center" style="margin-top:1.5rem;">
+      <button onclick="pickForm('A')">Start Form A</button>
+      <button onclick="pickForm('B')">Start Form B</button>
+    </div>
+    <div class="center" style="margin-top:1rem;">
+      <button id="teacher-btn" title="Password required">🔐 Teacher Mode</button>
+    </div>
+  </div>
+
+  <div class="container hidden" id="quiz-screen">
+    <div><div id="progress"></div><div class="progress-bar-container"><div class="progress-bar" id="progress-bar"></div></div></div>
+    <h2 id="question-text"></h2><div id="answers"></div>
+    <div class="center"><button id="next-btn" class="hidden" onclick="nextQuestion()">Next ➡️</button>
+    <button id="submit-btn" class="hidden" onclick="submitTest()">Submit Test ✅</button></div>
+  </div>
+
+  <div class="container hidden" id="end-screen">
+    <h2>🎉 Test Submitted!</h2><p id="final-score"></p><p id="percent-score"></p><p id="performance-message"></p>
+    <div class="center"><button onclick="restart()">🔄 New Student</button></div>
+  </div>
+
+  <div class="container hidden" id="teacher-screen">
+    <h2>📊 Teacher Dashboard</h2><button onclick="exportCSV()">⬇️ Export CSV</button><button onclick="backToStart()">↩️ Exit</button>
+    <table id="results-table"><thead><tr><th>Timestamp</th><th>Name</th><th>Form</th><th>Score</th><th>Percent</th><th>Answered</th></tr></thead><tbody></tbody></table>
+  </div>
+
+  <audio id="ding-sound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+  <audio id="buzz-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, doc, addDoc, updateDoc, serverTimestamp, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    const firebaseConfig = {apiKey:"AIzaSyDVt6A-01-nI1nGp5Dslv9gkb6LpQp6wgI",authDomain:"math-module-2-test.firebaseapp.com",projectId:"math-module-2-test",storageBucket:"math-module-2-test.firebasestorage.app",messagingSenderId:"829053501307",appId:"1:829053501307:web:cbad37685920e3a9de07de",measurementId:"G-8JKB2KT435"};
+    const app=initializeApp(firebaseConfig);const db=getFirestore(app);
+    const TEACHER_PASSWORD="Chumley19771986!";
+    const tests={A:[{q:"What is 46,359 + 1,273?",options:["47,522","47,632","58,089","59,089"],answer:"47,632"}],B:[{q:"What is 23,187 + 1,596?",options:["39,147","38,047","24,783","24,673"],answer:"24,783"}]};
+    let currentTest=[],currentIndex=0,selections=[],docRefId=null,meta={name:"",form:""};
+    function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+    function updateProgress(){document.getElementById("progress").innerText=`Question ${currentIndex+1} of ${currentTest.length}`;document.getElementById("progress-bar").style.width=((currentIndex/currentTest.length)*100)+"%";}
+    window.pickForm=async function(form){const name=document.getElementById("student-name").value.trim();if(!name){alert("Please enter your name.");return;}meta={name,form};currentTest=shuffle(JSON.parse(JSON.stringify(tests[form]))).map(q=>({...q,options:shuffle(q.options)}));selections=new Array(currentTest.length).fill(null);currentIndex=0;const newDoc=await addDoc(collection(db,"math_module_2_attempts"),{name,form,total:currentTest.length,answered:0,score:0,percent:0,responses:[],startedAt:serverTimestamp(),updatedAt:serverTimestamp()});docRefId=newDoc.id;document.getElementById("start-screen").classList.add("hidden");document.getElementById("quiz-screen").classList.remove("hidden");showQuestion();}
+    function showQuestion(){const q=currentTest[currentIndex];updateProgress();const ans=document.getElementById("answers");ans.innerHTML="";q.options.forEach(opt=>{const b=document.createElement("button");b.innerText=opt;b.onclick=()=>selectAnswer(opt);ans.appendChild(b);});document.getElementById("next-btn").classList.add("hidden");document.getElementById("submit-btn").classList.add("hidden");}
+    async function selectAnswer(choice){selections[currentIndex]=choice;await updateDoc(doc(db,"math_module_2_attempts",docRefId),{responses:selections,answered:selections.filter(x=>x).length,updatedAt:serverTimestamp()});document.getElementById("next-btn").classList.remove("hidden");if(currentIndex===currentTest.length-1)document.getElementById("submit-btn").classList.remove("hidden");}
+    window.nextQuestion=function(){if(selections[currentIndex]==null){alert("Please select an answer.");return;}currentIndex++;if(currentIndex<currentTest.length)showQuestion();else{document.getElementById("next-btn").classList.add("hidden");document.getElementById("submit-btn").classList.remove("hidden");}};
+    window.submitTest=async function(){let s=0;currentTest.forEach((q,i)=>{if(selections[i]===q.answer)s++;});const p=Math.round((s/currentTest.length)*100);await updateDoc(doc(db,"math_module_2_attempts",docRefId),{score:s,percent:p,finishedAt:serverTimestamp(),updatedAt:serverTimestamp()});document.getElementById("quiz-screen").classList.add("hidden");document.getElementById("end-screen").classList.remove("hidden");document.getElementById("final-score").innerText=`You scored ${s} out of ${currentTest.length}.`;document.getElementById("percent-score").innerText=`That’s ${p}%.`;launchConfetti();}
+    window.restart=function(){document.getElementById("end-screen").classList.add("hidden");document.getElementById("start-screen").classList.remove("hidden");document.getElementById("progress-bar").style.width="0%";document.getElementById("student-name").value="";}
+    document.getElementById("teacher-btn").onclick=function(){const pw=prompt("Enter Teacher Password");if(pw!==TEACHER_PASSWORD){alert("Incorrect password.");return;}showTeacher();};
+    function showTeacher(){document.getElementById("start-screen").classList.add("hidden");document.getElementById("teacher-screen").classList.remove("hidden");const q=query(collection(db,"math_module_2_attempts"),orderBy("updatedAt","desc"));onSnapshot(q,snap=>{const tb=document.querySelector("#results-table tbody");tb.innerHTML="";const rows=[];snap.forEach(d=>{const v=d.data();const a=(v.responses||[]).filter(x=>x).length;const ts=v.updatedAt?.toDate?v.updatedAt.toDate():new Date();tb.insertAdjacentHTML("beforeend",`<tr><td>${ts.toLocaleString()}</td><td>${v.name||""}</td><td>${v.form||""}</td><td>${v.score||""}/${v.total||""}</td><td>${v.percent||""}%</td><td>${a}</td></tr>`);rows.push({timestamp:ts.toISOString(),name:v.name||"",form:v.form||"",score:v.score||"",total:v.total||"",percent:v.percent||"",answered:a});});window.__rows=rows;});}
+    function launchConfetti(){const d=2e3,e=Date.now()+d;(function f(){confetti({particleCount:5,angle:60,spread:55,origin:{x:0}});confetti({particleCount:5,angle:120,spread:55,origin:{x:1}});if(Date.now()<e)requestAnimationFrame(f);})();}
+    window.backToStart=function(){document.getElementById("teacher-screen").classList.add("hidden");document.getElementById("start-screen").classList.remove("hidden");};
+    window.exportCSV=function(){const r=window.__rows||[],h=["timestamp","name","form","score","total","percent","answered"],csv=[h.join(",")].concat(r.map(x=>h.map(y=>`"${String(x[y]).replace(/"/g,'""')}"`).join(","))).join("\n");const b=new Blob([csv],{type:"text/csv"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="math_module_2_results.csv";a.click();URL.revokeObjectURL(u);};
+  </script>
+</body>
+</html>
